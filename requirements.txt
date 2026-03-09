@@ -11,3 +11,4 @@ langchain-huggingface
 transformers
 huggingface-hub
 -e .
+# jq==1.6.0
