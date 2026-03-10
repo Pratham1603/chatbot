@@ -55,7 +55,7 @@ qa_chain = RetrievalQA.from_chain_type(
     chain_type_kwargs={"prompt": PROMPT}
 )
 
-#######################################################################
+#####################################################################################
 
 @app.route("/")
 def index():
@@ -63,66 +63,19 @@ def index():
 
 
 @app.route("/get", methods=["GET", "POST"])
+
 def chat():
-
+    
     msg = request.form["msg"]
-    user_input = msg
-    print(f"User Input: {user_input}")
+    print(f"User Input: {msg}")
+    
+    response = qa_chain.invoke({"query": msg})
+    result = response["result"]  # ← move this BEFORE jsonify
+    
+    print("Response : ", result)
+    return jsonify({"answer": result})
 
-    # Invoke RAG
-    response = qa_chain.invoke({"query": user_input})
-
-    answer = response["result"]
-    source_docs = response["source_documents"]
-
-    img_url = None
-    product_url = None
-    product_title = None
-
-    # Find first product document with image
-    for doc in source_docs:
-
-        current_img = (
-            doc.metadata.get("Image Src")
-            or doc.metadata.get("image_src")
-            or doc.metadata.get("image")
-        )
-
-        current_handle = (
-            doc.metadata.get("handle")
-            or doc.metadata.get("Handle")
-        )
-
-        current_title = (
-            doc.metadata.get("title")
-            or doc.metadata.get("Title")
-        )
-
-        if current_img and str(current_img).strip():
-
-            img_url = current_img
-            product_title = current_title
-
-            if current_handle:
-                product_url = f"https://mokshfit.com/products/{current_handle}"
-
-            break
-
-    print(f"Response: {answer}")
-
-    if img_url:
-        print(f"Image Found: {img_url}")
-
-    if product_url:
-        print(f"Link Generated: {product_url}")
-
-    return jsonify({
-        "answer": answer,
-        "image": img_url,
-        "url": product_url,
-        "title": product_title
-    })
-
+#####################################################################################
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080, debug=True)

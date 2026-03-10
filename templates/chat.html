@@ -1,83 +1,481 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MOKSHFIT AI Assistant</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <title>MOKSHFIT — AI Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
-    
+
     <style>
-        .product_img_chat {
-            max-width: 250px;
-            height: auto;
-            border-radius: 15px;
-            border: 2px solid #78e08f;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-            margin-top: 5px;
-            transition: transform 0.2s;
-            cursor: pointer;
+        :root {
+            --lime: #e3fc02;
+            --black: #1f1f21;
+            --black-mid: #2a2a2d;
+            --black-light: #333337;
+            --white: #ffffff;
+            --white-dim: rgba(255,255,255,0.6);
+            --white-faint: rgba(255,255,255,0.07);
+            --lime-dim: rgba(227,252,2,0.15);
+            --lime-glow: rgba(227,252,2,0.4);
+            --font-display: 'Bebas Neue', cursive;
+            --font-mono: 'Space Mono', monospace;
+            --font-body: 'Inter', sans-serif;
         }
-        .product_img_chat:hover {
-            transform: scale(1.03);
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body, html {
+            height: 100%;
+            font-family: var(--font-body);
+            background-color: var(--black);
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(227,252,2,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(227,252,2,0.03) 0%, transparent 50%);
+            color: var(--white);
+            overflow: hidden;
         }
-        .msg_cotainer_img {
-            background: none !important;
-            border: none !important;
+
+        .grain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-size: 256px;
+        }
+
+        .chat-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .chat-card {
+            width: 100%;
+            max-width: 680px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--black-mid);
+            border-left: 1px solid var(--white-faint);
+            border-right: 1px solid var(--white-faint);
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 24px;
+            background: var(--black);
+            border-bottom: 2px solid var(--lime);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .chat-header::after {
+            content: '';
+            position: absolute;
+            bottom: -8px; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(to bottom, rgba(227,252,2,0.1), transparent);
+            pointer-events: none;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 14px; }
+
+        .avatar-wrap { position: relative; width: 48px; height: 48px; }
+
+        .bot-avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            border: 2px solid var(--lime);
+            background: var(--lime);
+            object-fit: contain;
+            padding: 4px;
+        }
+
+        .status-dot {
+            position: absolute;
+            bottom: 1px; right: 1px;
+            width: 11px; height: 11px;
+            background: var(--lime);
+            border-radius: 50%;
+            border: 2px solid var(--black);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--lime-glow); }
+            50% { box-shadow: 0 0 0 5px transparent; }
+        }
+
+        .header-info { display: flex; flex-direction: column; }
+
+        .brand-name {
+            font-family: var(--font-display);
+            font-size: 26px;
+            letter-spacing: 3px;
+            color: var(--lime);
+            line-height: 1;
+        }
+
+        .brand-sub {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: var(--white-dim);
+            letter-spacing: 1.5px;
+            margin-top: 3px;
+        }
+
+        /* Lotus SVG in header */
+        .header-lotus svg {
+            filter: drop-shadow(0 0 6px var(--lime-glow));
+        }
+
+        /* CHAT BODY */
+        .chat-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: var(--black-mid);
+            background-image: repeating-linear-gradient(
+                0deg, transparent, transparent 39px,
+                rgba(255,255,255,0.015) 39px,
+                rgba(255,255,255,0.015) 40px
+            );
+        }
+
+        .chat-body::-webkit-scrollbar { width: 4px; }
+        .chat-body::-webkit-scrollbar-thumb { background: var(--lime-dim); border-radius: 4px; }
+        .chat-body::-webkit-scrollbar-track { background: transparent; }
+
+        /* MESSAGES */
+        .msg-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            animation: slideUp 0.25s ease-out both;
+        }
+        .bot-row { justify-content: flex-start; }
+        .user-row { justify-content: flex-end; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-avatar { width: 36px; height: 36px; flex-shrink: 0; }
+        .msg-avatar-img {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: var(--lime);
+            border: 1.5px solid var(--black-light);
+            object-fit: contain;
+            padding: 3px;
+        }
+
+        /* Bot avatar specifically — lime bg */
+        .bot-avatar-msg {
+            background: var(--lime) !important;
+            padding: 4px !important;
+        }
+
+        /* User avatar — white bg */
+        .user-avatar-msg {
+            background: var(--white) !important;
+            padding: 2px !important;
+        }
+
+        .msg-bubble {
+            max-width: 72%;
+            padding: 12px 16px 26px;
+            position: relative;
+            font-size: 14px;
+            line-height: 1.65;
+            word-break: break-word;
+        }
+
+        .bot-bubble {
+            background: var(--black-light);
+            color: var(--white);
+            border-radius: 4px 18px 18px 18px;
+            border-left: 3px solid var(--lime);
+        }
+
+        .user-bubble {
+            background: var(--lime);
+            color: var(--black);
+            border-radius: 18px 4px 18px 18px;
+            font-weight: 500;
+        }
+
+        .msg-time {
+            position: absolute;
+            bottom: 7px; right: 12px;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: rgba(255,255,255,0.3);
+        }
+        .user-bubble .msg-time { color: rgba(31,31,33,0.45); }
+
+        .welcome-tag {
+            display: inline-block;
+            background: var(--lime);
+            color: var(--black);
+            font-family: var(--font-display);
+            font-size: 11px;
+            letter-spacing: 2px;
+            padding: 1px 8px;
+            border-radius: 2px;
+            margin-bottom: 6px;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        /* TYPING */
+        .typing-bubble {
+            padding: 14px 20px 14px !important;
+            display: flex !important;
+            align-items: center;
+            gap: 5px;
+            min-width: 60px;
+        }
+
+        .dot {
+            width: 7px; height: 7px;
+            background: var(--lime);
+            border-radius: 50%;
+            display: inline-block;
+            animation: blink 1.2s infinite;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* PRODUCT CARD */
+        .product-card {
+            background: var(--black);
+            border: 1px solid var(--black-light);
+            border-top: 2px solid var(--lime);
+            border-radius: 0 12px 12px 12px;
+            padding: 14px;
+            max-width: 260px;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+            gap: 10px;
+            animation: slideUp 0.3s ease-out both;
         }
+
+        .product-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            letter-spacing: 1.5px;
+            color: var(--lime);
+            text-transform: uppercase;
+        }
+
+        .product-img {
+            width: 100%;
+            max-width: 230px;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid var(--black-light);
+            display: block;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: zoom-in;
+            background: var(--white);
+        }
+
+        .product-img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 24px rgba(227,252,2,0.2);
+        }
+
         .shop-btn {
-            border-radius: 20px;
-            color: white !important;
-            border-color: #764ba2 !important;
-            background: #764ba2;
-            font-size: 12px;
-            padding: 5px 15px;
-            margin-top: 8px;
-            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--lime);
+            color: var(--black) !important;
+            font-family: var(--font-display);
+            font-size: 13px;
+            letter-spacing: 2px;
+            padding: 7px 18px;
+            border-radius: 2px;
+            text-decoration: none !important;
+            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
         }
+
         .shop-btn:hover {
-            background: #667eea;
-            border-color: #667eea !important;
-            text-decoration: none;
+            background: var(--white);
+            transform: translateX(3px);
+            box-shadow: -4px 0 0 var(--lime);
+            text-decoration: none !important;
+        }
+
+        /* FOOTER / INPUT */
+        .chat-footer {
+            background: var(--black);
+            padding: 14px 20px 10px;
+            border-top: 1px solid rgba(227,252,2,0.25);
+            flex-shrink: 0;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            background: var(--black-light);
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .input-row:focus-within {
+            border-color: var(--lime);
+            box-shadow: 0 0 0 2px var(--lime-dim);
+        }
+
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--white);
+            font-family: var(--font-body);
+            font-size: 14px;
+            padding: 14px 18px;
+            caret-color: var(--lime);
+        }
+
+        .chat-input::placeholder { color: rgba(255,255,255,0.3); }
+
+        .send-btn {
+            background: var(--lime);
+            border: none;
+            color: var(--black);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 15px;
+            flex-shrink: 0;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .send-btn:hover { background: var(--white); }
+        .send-btn:active { transform: scale(0.93); }
+
+        .footer-note {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: rgba(255,255,255,0.2);
+            text-align: center;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 576px) {
+            .chat-card { border: none; border-radius: 0; }
+            .brand-name { font-size: 22px; }
+            .msg-bubble { max-width: 85%; font-size: 13px; }
+            .product-card { max-width: 200px; }
+            .chat-body { padding: 18px 14px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="container-fluid h-100">
-        <div class="row justify-content-center h-100">
-            <div class="col-md-8 col-xl-6 chat">
-                <div class="card">
-                    <div class="card-header msg_head">
-                        <div class="d-flex bd-highlight">
-                            <div class="img_cont">
-                                <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="rounded-circle user_img">
-                                <span class="online_icon"></span>
-                            </div>
-                            <div class="user_info">
-                                <span>MOKSHFIT</span>
-                                <p>SHUBH SWAGATAM !!!!</p>
-                            </div>
-                        </div>
+    <div class="grain"></div>
+
+    <div class="chat-wrapper">
+        <div class="chat-card">
+
+            <!-- HEADER -->
+            <div class="chat-header">
+                <div class="header-left">
+                    <div class="avatar-wrap">
+                        <!-- Inline bot icon using SVG — no external image needed -->
+                        <svg class="bot-avatar" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="24" cy="24" r="24" fill="#e3fc02"/>
+                            <!-- Lotus icon in black -->
+                            <ellipse cx="24" cy="32" rx="5" ry="2.5" fill="#1f1f21"/>
+                            <ellipse cx="24" cy="26" rx="4" ry="8" fill="#1f1f21"/>
+                            <ellipse cx="16" cy="25" rx="3.5" ry="7" transform="rotate(-20 16 25)" fill="#1f1f21"/>
+                            <ellipse cx="32" cy="25" rx="3.5" ry="7" transform="rotate(20 32 25)" fill="#1f1f21"/>
+                            <ellipse cx="10" cy="28" rx="3" ry="6" transform="rotate(-40 10 28)" fill="#1f1f21" opacity="0.7"/>
+                            <ellipse cx="38" cy="28" rx="3" ry="6" transform="rotate(40 38 28)" fill="#1f1f21" opacity="0.7"/>
+                            <circle cx="24" cy="26" r="2" fill="#e3fc02"/>
+                        </svg>
+                        <span class="status-dot"></span>
                     </div>
+                    <div class="header-info">
+                        <span class="brand-name">MOKSHFIT</span>
+                        <span class="brand-sub">AI STYLE ASSISTANT · ONLINE</span>
+                    </div>
+                </div>
+                <!-- Lotus decoration -->
+                <div class="header-lotus">
+                    <svg viewBox="0 0 50 42" fill="none" xmlns="http://www.w3.org/2000/svg" width="44" opacity="0.85">
+                        <ellipse cx="25" cy="34" rx="6" ry="3" fill="#e3fc02"/>
+                        <ellipse cx="25" cy="27" rx="5" ry="10" fill="#e3fc02"/>
+                        <ellipse cx="16" cy="25" rx="4" ry="8.5" transform="rotate(-20 16 25)" fill="#e3fc02"/>
+                        <ellipse cx="34" cy="25" rx="4" ry="8.5" transform="rotate(20 34 25)" fill="#e3fc02"/>
+                        <ellipse cx="9" cy="29" rx="3" ry="7" transform="rotate(-42 9 29)" fill="#e3fc02" opacity="0.6"/>
+                        <ellipse cx="41" cy="29" rx="3" ry="7" transform="rotate(42 41 29)" fill="#e3fc02" opacity="0.6"/>
+                    </svg>
+                </div>
+            </div>
 
-                    <div id="messageFormeight" class="card-body msg_card_body"></div>
-
-                    <div class="card-footer">
-                        <form id="messageArea" class="input-group">
-                            <input type="text" id="text" name="msg" placeholder="Ask about hoodies, t-shirts, or orders..." autocomplete="off" class="form-control type_msg" required/>
-                            <div class="input-group-append">
-                                <button type="submit" id="send" class="input-group-text send_btn">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
-                        </form>
+            <!-- CHAT BODY -->
+            <div id="messageFormeight" class="chat-body">
+                <div class="msg-row bot-row">
+                    <div class="msg-avatar">
+                        <svg class="msg-avatar-img bot-avatar-msg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="24" cy="24" r="24" fill="#e3fc02"/>
+                            <ellipse cx="24" cy="32" rx="5" ry="2.5" fill="#1f1f21"/>
+                            <ellipse cx="24" cy="26" rx="4" ry="8" fill="#1f1f21"/>
+                            <ellipse cx="16" cy="25" rx="3.5" ry="7" transform="rotate(-20 16 25)" fill="#1f1f21"/>
+                            <ellipse cx="32" cy="25" rx="3.5" ry="7" transform="rotate(20 32 25)" fill="#1f1f21"/>
+                        </svg>
+                    </div>
+                    <div class="msg-bubble bot-bubble">
+                        <span class="welcome-tag">WELCOME</span>
+                        Hey, I'm the MOKSHFIT bot 🪷<br>
+                        Drop your style questions — hoodies, tees, orders, sizing. I got you.
+                        <span class="msg-time">NOW</span>
                     </div>
                 </div>
             </div>
+
+            <!-- FOOTER INPUT -->
+            <div class="chat-footer">
+                <form id="messageArea" class="input-row">
+                    <input type="text" id="text" name="msg"
+                        placeholder="Ask about hoodies, drops, orders..."
+                        autocomplete="off" class="chat-input" required/>
+                    <button type="submit" id="send" class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+                <p class="footer-note">moksfit.in · Free shipping on orders above ₹999</p>
+            </div>
+
         </div>
     </div>
 
@@ -85,25 +483,54 @@
     $(document).ready(function() {
 
         function scrollToBottom() {
-            var messageBody = document.getElementById("messageFormeight");
-            messageBody.scrollTop = messageBody.scrollHeight;
+            var el = document.getElementById("messageFormeight");
+            el.scrollTop = el.scrollHeight;
         }
 
+        function timeNow() {
+            const d = new Date();
+            return d.getHours() + ":" + d.getMinutes().toString().padStart(2,'0');
+        }
+
+        var botAvatarSVG = `<svg class="msg-avatar-img" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="background:#e3fc02;padding:3px;">
+            <circle cx="24" cy="24" r="24" fill="#e3fc02"/>
+            <ellipse cx="24" cy="32" rx="5" ry="2.5" fill="#1f1f21"/>
+            <ellipse cx="24" cy="26" rx="4" ry="8" fill="#1f1f21"/>
+            <ellipse cx="16" cy="25" rx="3.5" ry="7" transform="rotate(-20 16 25)" fill="#1f1f21"/>
+            <ellipse cx="32" cy="25" rx="3.5" ry="7" transform="rotate(20 32 25)" fill="#1f1f21"/>
+        </svg>`;
+
+        var userAvatarSVG = `<svg class="msg-avatar-img" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff;padding:3px;">
+            <circle cx="24" cy="18" r="9" fill="#1f1f21"/>
+            <ellipse cx="24" cy="36" rx="14" ry="9" fill="#1f1f21"/>
+        </svg>`;
+
         $("#messageArea").on("submit", function(event) {
+            event.preventDefault();
 
-            const date = new Date();
-            const str_time = date.getHours() + ":" + date.getMinutes().toString().padStart(2, '0');
-
+            const t = timeNow();
             var rawText = $("#text").val();
+            if (!rawText.trim()) return;
 
-            var userHtml = '<div class="d-flex justify-content-end mb-4"><div class="msg_cotainer_send">'
-            + rawText +
-            '<span class="msg_time_send">' + str_time +
-            '</span></div><div class="img_cont_msg"><img src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png" class="rounded-circle user_img_msg"></div></div>';
+            var userHtml =
+                '<div class="msg-row user-row">' +
+                '<div class="msg-bubble user-bubble">' + rawText +
+                '<span class="msg-time">' + t + '</span></div>' +
+                '<div class="msg-avatar">' + userAvatarSVG + '</div>' +
+                '</div>';
 
             $("#text").val("");
             $("#messageFormeight").append(userHtml);
+            scrollToBottom();
 
+            // Typing indicator
+            $("#messageFormeight").append(
+                '<div class="msg-row bot-row" id="typing-indicator">' +
+                '<div class="msg-avatar">' + botAvatarSVG + '</div>' +
+                '<div class="msg-bubble bot-bubble typing-bubble">' +
+                '<span class="dot"></span><span class="dot"></span><span class="dot"></span>' +
+                '</div></div>'
+            );
             scrollToBottom();
 
             $.ajax({
@@ -112,48 +539,30 @@
                 url: "/get",
             }).done(function(data) {
 
-                var botHtml =
-                '<div class="d-flex justify-content-start mb-4">' +
-                '<div class="img_cont_msg">' +
-                '<img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="rounded-circle user_img_msg">' +
-                '</div>' +
-                '<div class="msg_cotainer">' +
-                data.answer +
-                '<span class="msg_time">' + str_time + '</span>' +
-                '</div></div>';
+                $("#typing-indicator").remove();
+
+                $("#messageFormeight").append(
+                    '<div class="msg-row bot-row">' +
+                    '<div class="msg-avatar">' + botAvatarSVG + '</div>' +
+                    '<div class="msg-bubble bot-bubble">' + data.answer +
+                    '<span class="msg-time">' + t + '</span></div></div>'
+                );
 
                 if (data.image) {
-
-                    botHtml += `
-                    <div class="d-flex justify-content-start mb-4">
-
-                        <div class="img_cont_msg" style="visibility:hidden">
-                            <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="rounded-circle user_img_msg">
-                        </div>
-
-                        <div class="msg_cotainer_img">
-
-                            ${data.title ? `<div style="font-weight:500;margin-bottom:6px">${data.title}</div>` : ""}
-
-                            <a href="${data.image}" target="_blank">
-                                <img src="${data.image}" class="product_img_chat">
-                            </a>
-
-                            ${data.url ? `<a href="${data.url}" target="_blank" class="btn btn-sm shop-btn">View on Store</a>` : ""}
-
-                        </div>
-
-                    </div>
-                    `
+                    $("#messageFormeight").append(
+                        '<div class="msg-row bot-row">' +
+                        '<div class="msg-avatar" style="visibility:hidden">' + botAvatarSVG + '</div>' +
+                        '<div class="product-card">' +
+                        (data.title ? '<div class="product-title">' + data.title + '</div>' : '') +
+                        '<a href="' + data.image + '" target="_blank">' +
+                        '<img src="' + data.image + '" class="product-img"></a>' +
+                        (data.url ? '<a href="' + data.url + '" target="_blank" class="shop-btn">VIEW DROP <i class="fas fa-arrow-right"></i></a>' : '') +
+                        '</div></div>'
+                    );
                 }
 
-                $("#messageFormeight").append(botHtml)
-
-                scrollToBottom()
-
+                scrollToBottom();
             });
-
-            event.preventDefault();
         });
     });
     </script>

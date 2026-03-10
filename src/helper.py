@@ -31,6 +31,7 @@ def load_json_file(file_path):
         Product Handle: {item.get('Handle')}
         Product Type: {item.get('Type')}
         Vendor: {item.get('Vendor')}
+        Price: {item.get("Variant Price")}
         Color: {item.get('Color')}
         Size: {item.get('Size')}
         Fabric Type: {item.get('Fabric_Type')}

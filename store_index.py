@@ -14,7 +14,7 @@ os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
 os.environ["HUGGINGFACE_API_KEY"] = HUGGINGFACE_API_KEY
 
 # Set this to True if you want to delete the existing data and re-upload
-FORCE_RELOAD = False 
+FORCE_RELOAD = False                     
 index_name = "mokshfit"
 
 # 2. Initialize Pinecone & Embeddings
